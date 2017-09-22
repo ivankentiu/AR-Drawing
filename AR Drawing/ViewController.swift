@@ -11,6 +11,7 @@ import ARKit
 
 class ViewController: UIViewController, ARSCNViewDelegate {
 
+    @IBOutlet weak var draw: UIButton!
     @IBOutlet weak var sceneView: ARSCNView!
     let configuration = ARWorldTrackingConfiguration()
     
@@ -33,7 +34,7 @@ class ViewController: UIViewController, ARSCNViewDelegate {
     
     // from ARSCNViewDelegate, this delegate function gets called everytime the view is about to render a scene (loop like update in unity)
     func renderer(_ renderer: SCNSceneRenderer, willRenderScene scene: SCNScene, atTime time: TimeInterval) {
-        print("rendering..")
+        
         // point of view(current orientation and location) = current position of the sceneView(cameraview)
         guard let pointOfView = sceneView.pointOfView else { return }
         
@@ -48,8 +49,41 @@ class ViewController: UIViewController, ARSCNViewDelegate {
         
         // get the current position
         let currentPositionOfCamera = orientation + location
+        DispatchQueue.main.async {
+            // add self else error
+            if self.draw.isHighlighted  {
+                let sphereNode = SCNNode(geometry: SCNSphere(radius: 0.02))
+                
+                // put the sphere is the current position of the camera (starting position draw)
+                sphereNode.position = currentPositionOfCamera
+                self.sceneView.scene.rootNode.addChildNode(sphereNode)
+                sphereNode.geometry?.firstMaterial?.diffuse.contents = UIColor.red
+                print("draw button is being pressed")
+            } else {
+                // change from sphere to box (to distinguish) illusion that it is a sphere
+                let pointer = SCNNode(geometry: SCNSphere(radius: 0.01))
+                
+                // give it a name to differentiate instead of using the circle box tech
+                pointer.name = "pointer"
+                
+                // place pointer in the current position of camera
+                pointer.position = currentPositionOfCamera
+                
+                // we have to delete every single other pointer if is SCNBox
+                self.sceneView.scene.rootNode.enumerateChildNodes( { (node, _) in
+                    if node.name == "pointer" {
+                         node.removeFromParentNode()
+                    }
+                })
+                
+                pointer.geometry?.firstMaterial?.diffuse.contents = UIColor.red
+                
+                // only adding the newest pointer in the sceneview
+                self.sceneView.scene.rootNode.addChildNode(pointer)
+            }
+        }
         
-        print(orientation.x, orientation.y, orientation.z)
+        
     }
     
 }
